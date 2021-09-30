@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% set page_title = 'sonify' %}
+{% block content %}
+    <script>
+        $DATABASE_GET_MEASUREMENTS_URL = '{{ url_for('database_bp.get_measurements') }}';
+        $DATABASE_GET_FIELDS_URL = '{{ url_for('database_bp.get_fields') }}';
+        $DATABASE_GET_TAG_NAMES_URL = '{{ url_for('database_bp.get_tag_names') }}';
+        $DATABASE_GET_TAG_VALUES_URL = '{{ url_for('database_bp.get_tag_values') }}';
+    </script>
+    <script src="{{ url_for('sonify_bp.static', filename='js/sonify.js') }}"></script>
+    <link href="{{ url_for('sonify_bp.static', filename='css/sonify.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
+          rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+    <div role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Sonify</h1>
+        </div>
+        <p class="lead">Create a query to return time-series data to be sonified.</p>
+        <form action="#" method="post">
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <input type="checkbox" checked data-toggle="toggle" data-on="Absolute" data-off="Relative" id="type"
+                           data-offstyle="primary" name="type">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <label for="database">Database</label>
+                    <select class="custom-select" id="database" name="database" required>
+                        <option selected disabled hidden></option>
+                        {% for db in list_dbs %}
+                            {% if db != 'telegraf' and db != '_internal' %}
+                                <option>{{ db }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label for="measurement">Measurement</label>
+                    <select class="custom-select" id="measurement" name="measurement" required disabled>
+                        <option>Select a database...</option>
+                    </select>
+                </div>
+                <div class="col-md-1 mb-1">
+                    <label for="fieldFunction">Field Function</label>
+                    <select class="custom-select" id="fieldFunction" name="fieldFunction">
+                        <option selected></option>
+                        <option>mean</option>
+                        <option>median</option>
+                        <option>count</option>
+                        <option>min</option>
+                        <option>max</option>
+                        <option>sum</option>
+                        <option>first</option>
+                        <option>last</option>
+                        <option>spread</option>
+                        <option>stddev</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label for="field">Field</label>
+                    <select class="custom-select" id="field" name="field" required disabled>
+                        <option>Select a measurement...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <label for="tagName">Tag name (Optional)</label>
+                    <select class="custom-select" id="tagName" name="tagName" disabled>
+                        <option>Select a measurement...</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label for="tagValue">Tag value (Optional)</label>
+                    <select class="custom-select" id="tagValue" name="tagValue" disabled>
+                        <option>Select a tag name...</option>
+                    </select>
+                </div>
+                <div class="col-md-1 mb-1">
+                    <label for="instrument">Instrument</label>
+                    <select class="custom-select" id="instrument" name="instrument">
+                        {% for instrument in instrumentList %}
+                            <option>{{ instrument }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 mb-1">
+                    <label for="groupBy">Group By</label>
+                    <select class="custom-select" id="groupBy" name="groupBy" disabled>
+                        <option selected></option>
+                        <option>10s</option>
+                        <option>1m</option>
+                        <option>5m</option>
+                        <option>10m</option>
+                        <option>30m</option>
+                        <option>1h</option>
+                        <option>6h</option>
+                        <option>1d</option>
+                        <option>7d</option>
+                    </select>
+                </div>
+            </div>
+            <div id="absolute">
+                <div class="row">
+                    <div class="col-md-2 mb-2">
+                        <label for="datetimeStart">Start datetime</label>
+                        <input class="form-control" type="datetime-local" value="{{ datetimeS }}" id="datetimeStart"
+                               name="datetimeStart" required>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label for="datetimeEnd">End datetime</label>
+                        <input class="form-control" type="datetime-local" value="{{ datetimeE }}" id="datetimeEnd"
+                               name="datetimeEnd" required>
+                    </div>
+                </div>
+            </div>
+            <div id="relative">
+                <div class="row">
+                    <div class="col-md-2 mb-2">
+                        <label for="numPast">Past</label>
+                        <input type="number" class="form-control" id="numPast" name="numPast" value="24" required>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label for="pastX">Interval</label>
+                        <select class="custom-select" id="pastX" name="pastX">
+                            <option>seconds</option>
+                            <option>minutes</option>
+                            <option selected>hours</option>
+                            <option>days</option>
+                            <option>weeks</option>
+                            <option>months</option>
+                            <option>years</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <button type="submit" class="btn btn-success" name="action" value="query">Run query</button>
+                </div>
+            </div>
+        </form>
+        {% if music %}
+            <h1 class="mt-5">Results</h1>
+            <p class="lead">This session ID will allow you to pull up your results in the future.</p>
+            <p class="lead">Session ID: <code>{{ sessionID }}</code></p>
+            <a href="http://localhost:8888/sources/10000/chronograf/data-explorer?query={{ query }}">View on
+                Chronograf</a>
+            <canvas id="resultsChart" height="700"></canvas>
+            <script>createChart({{ labels|tojson }}, {{ values|tojson }}, '{{ legend|safe }}');</script>
+            <audio id="music" src="{{ musicPath }}" controls='controls'></audio>
+            <script>startListeners({{ amountPoints|safe }})</script>
+        {% endif %}
+    </div>
+{% endblock %}
